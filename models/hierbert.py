@@ -141,3 +141,4 @@ if __name__ == "__main__":
     # 4 document outputs with 10 (num_labels) logits are expected
     assert output.logits.shape == torch.Size([4, 10])
 
+

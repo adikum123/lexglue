@@ -34,7 +34,7 @@ from transformers import (
 from transformers.trainer_utils import get_last_checkpoint
 from transformers.utils import check_min_version
 from transformers.utils.versions import require_version
-
+from knn import kNN
 
 # Will error if the minimal version of Transformers is not installed. Remove at your own risks.
 check_min_version("4.9.0")
@@ -144,6 +144,7 @@ def main():
     parser = HfArgumentParser((ModelArguments, DataTrainingArguments, TrainingArguments))
     model_args, data_args, training_args = parser.parse_args_into_dataclasses()
 
+
     # Setup distant debugging if needed
     if data_args.server_ip and data_args.server_port:
         # Distant debugging - see https://code.visualstudio.com/docs/python/debugging#_attach-to-a-local-script
@@ -252,11 +253,13 @@ def main():
 
     # Preprocessing the datasets
     # Padding strategy
-    if data_args.pad_to_max_length:
-        padding = "max_length"
-    else:
-        # We will pad later, dynamically at batch creation, to the max sequence length in each batch
-        padding = False
+    # if data_args.pad_to_max_length:
+    #     padding = "max_length"
+    # else:
+    #     # We will pad later, dynamically at batch creation, to the max sequence length in each batch
+    #     padding = False
+
+    padding = "max_length"
 
     def preprocess_function(examples):
         # Tokenize the texts
@@ -358,7 +361,6 @@ def main():
             data_args.max_train_samples if data_args.max_train_samples is not None else len(train_dataset)
         )
         metrics["train_samples"] = min(max_train_samples, len(train_dataset))
-
         trainer.save_model()  # Saves the tokenizer too for easy upload
 
         trainer.log_metrics("train", metrics)
@@ -366,15 +368,15 @@ def main():
         trainer.save_state()
 
     # Evaluation
-    if training_args.do_eval:
-        logger.info("*** Evaluate ***")
-        metrics = trainer.evaluate(eval_dataset=eval_dataset)
-
-        max_eval_samples = data_args.max_eval_samples if data_args.max_eval_samples is not None else len(eval_dataset)
-        metrics["eval_samples"] = min(max_eval_samples, len(eval_dataset))
-
-        trainer.log_metrics("eval", metrics)
-        trainer.save_metrics("eval", metrics)
+    # if training_args.do_eval:
+    #     logger.info("*** Evaluate ***")
+    #     metrics = trainer.evaluate(eval_dataset=eval_dataset)
+    #
+    #     max_eval_samples = data_args.max_eval_samples if data_args.max_eval_samples is not None else len(eval_dataset)
+    #     metrics["eval_samples"] = min(max_eval_samples, len(eval_dataset))
+    #
+    #     trainer.log_metrics("eval", metrics)
+    #     trainer.save_metrics("eval", metrics)
 
     # Prediction
     if training_args.do_predict:
@@ -389,12 +391,12 @@ def main():
         trainer.log_metrics("predict", metrics)
         trainer.save_metrics("predict", metrics)
 
-        output_predict_file = os.path.join(training_args.output_dir, "test_predictions.csv")
-        if trainer.is_world_process_zero():
-            with open(output_predict_file, "w") as writer:
-                for index, pred_list in enumerate(predictions[0]):
-                    pred_line = '\t'.join([f'{pred:.5f}' for pred in pred_list])
-                    writer.write(f"{index}\t{pred_line}\n")
+        # output_predict_file = os.path.join(training_args.output_dir, "test_predictions.csv")
+        # if trainer.is_world_process_zero():
+        #     with open(output_predict_file, "w") as writer:
+        #         for index, pred_list in enumerate(predictions[0]):
+        #             pred_line = '\t'.join([f'{pred:.5f}' for pred in pred_list])
+        #             writer.write(f"{index}\t{pred_line}\n")
 
     # Clean up checkpoints
     checkpoints = [filepath for filepath in glob.glob(f'{training_args.output_dir}/*/') if '/checkpoint' in filepath]
